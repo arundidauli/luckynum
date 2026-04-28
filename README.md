@@ -2,6 +2,8 @@
 
 Static Supabase-powered number betting game built for free hosting on GitHub Pages or Vercel.
 
+![LuckyNum Preview](./preview.png)
+
 ## Recommended Repository Name
 
 `luckynum`
