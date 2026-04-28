@@ -321,6 +321,11 @@ async function signIn() {
       showToast(error.message);
       return;
     }
+
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if (sessionData?.session) {
+      await hydrateAuthenticatedApp(sessionData.session);
+    }
     dom.passwordInput.value = "";
   } catch (error) {
     console.error("Sign in failed", error);
@@ -357,6 +362,7 @@ async function signUp() {
     }
 
     if (data.session) {
+      await hydrateAuthenticatedApp(data.session);
       showToast("Account created.");
     } else {
       const message = "Account created. Confirm your email, then sign in.";
