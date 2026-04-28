@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuckyNum</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2309111f'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%230ea5e9'/%3E%3Ctext x='32' y='40' font-size='26' text-anchor='middle' fill='white' font-family='Arial'%3E7%3C/text%3E%3C/svg%3E"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="bg-glow bg-glow-a"></div>
+  <div class="bg-glow bg-glow-b"></div>
+  <div class="toast" id="toast"></div>
+
+  <section class="screen screen-active" id="entryScreen">
+    <div class="entry-card">
+      <p class="eyebrow">LuckyNum</p>
+      <h1 class="entry-title">Pick fast. Bet smart. Wait for the reveal.</h1>
+      <p class="entry-copy">Sign in with Supabase Auth to persist your profile and game state.</p>
+      <label class="field-label" for="usernameInput">Username</label>
+      <input
+        class="text-input"
+        id="usernameInput"
+        type="text"
+        maxlength="20"
+        autocomplete="off"
+        placeholder="e.g. Arun"
+      />
+      <label class="field-label" for="emailInput">Email</label>
+      <input
+        class="text-input"
+        id="emailInput"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+      />
+      <label class="field-label" for="passwordInput">Password</label>
+      <input
+        class="text-input"
+        id="passwordInput"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Minimum 6 characters"
+      />
+      <div class="auth-actions">
+        <button class="btn-primary" id="signInButton">Sign In</button>
+        <button class="btn-secondary" id="signUpButton">Create Account</button>
+      </div>
+      <p class="auth-copy" id="authMessage">
+        New users need a username. Existing users can sign in with email and password.
+      </p>
+    </div>
+  </section>
+
+  <main class="screen" id="gameScreen">
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">LuckyNum</p>
+          <h1 class="brand-title">Round Game</h1>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" id="soundButton" title="Toggle sound">🔊</button>
+          <div class="player-pill">
+            <span class="avatar" id="avatarBadge">?</span>
+            <span id="playerName">Player</span>
+          </div>
+          <div class="balance-pill" id="balanceValue">₹500</div>
+          <button class="btn-secondary btn-compact" id="signOutButton" type="button">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="card status-card" id="statusCard">
+          <div class="status-copy">
+            <p class="eyebrow">Current phase</p>
+            <h2 id="phaseLabel">Betting Open</h2>
+            <p class="phase-meta" id="roundLabel">Round #1</p>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-label" id="timerLabel">Betting closes in: 01:00</div>
+            <div class="timer-track">
+              <div class="timer-fill" id="timerFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card result-card" id="resultCard">
+          <p class="eyebrow">Result board</p>
+          <div class="result-shuffle" id="resultShuffle">?</div>
+          <div class="result-title" id="resultTitle">Select a number and place your bet</div>
+          <div class="result-copy" id="resultCopy">Reveal will show here after betting closes.</div>
+          <div class="last-chip" id="lastResultChip">Last: -</div>
+        </div>
+      </section>
+
+      <section class="card game-card" id="bettingCard">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Action area</p>
+            <h3>Place your bet fast</h3>
+          </div>
+          <div class="selection-chip" id="selectionChip">No number selected</div>
+        </div>
+
+        <div class="bet-toolbar">
+          <div class="toolbar-block">
+            <div class="toolbar-head">
+              <span class="mini-label">Select amount</span>
+              <span class="muted-copy">Win pays 1.8x</span>
+            </div>
+            <div class="coins-row" id="coinsRow"></div>
+          </div>
+
+          <div class="active-bet-card" id="activeBetCard">
+            <div>
+              <span class="mini-label">Current bet</span>
+              <strong id="activeBetText">No active bet</strong>
+            </div>
+            <div>
+              <span class="mini-label">Potential win</span>
+              <strong id="potentialWinText">-</strong>
+            </div>
+          </div>
+
+          <div class="bet-button-row" id="placeButtonWrap">
+            <button class="btn-primary" disabled>Choose number and amount</button>
+          </div>
+        </div>
+
+        <div class="numbers-block">
+          <div class="section-head section-head-small">
+            <div>
+              <p class="eyebrow">Choose number</p>
+              <h3>Pick 1 to 10</h3>
+            </div>
+          </div>
+          <div class="numbers-grid" id="numbersGrid"></div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <section class="main-panel">
+          <div class="card instruction-card">
+            <div class="instruction-row">
+              <div class="instruction-pill">1. Entered as <strong id="inlinePlayerName">Player</strong></div>
+              <div class="instruction-pill">2. Pick number</div>
+              <div class="instruction-pill">3. Pick amount</div>
+              <div class="instruction-pill">4. Place or update bet before close</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <div class="card stats-card">
+            <div class="section-head section-head-small">
+              <div>
+                <p class="eyebrow">Overview</p>
+                <h3>Your stats</h3>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-box">
+                <span class="mini-label">Balance</span>
+                <strong id="statsBalance">₹500</strong>
+              </div>
+              <div class="stat-box">
+                <span class="mini-label">W/L</span>
+                <strong id="statsRecord">0/0</strong>
+              </div>
+              <div class="stat-box">
+                <span class="mini-label">Best streak</span>
+                <strong id="statsBest">0</strong>
+              </div>
+              <div class="stat-box">
+                <span class="mini-label">Win rate</span>
+                <strong id="statsWinRate">-</strong>
+              </div>
+            </div>
+            <div class="streak-row">
+              <span class="mini-label">Recent</span>
+              <div class="streak-icons" id="streakIcons"></div>
+              <span class="streak-text" id="streakText">-</span>
+            </div>
+          </div>
+
+          <div class="card history-card">
+            <div class="section-head section-head-small">
+              <div>
+                <p class="eyebrow">History</p>
+                <h3>Previous rounds</h3>
+              </div>
+            </div>
+            <div class="history-list" id="historyList">
+              <div class="empty-state">No completed rounds yet.</div>
+            </div>
+          </div>
+
+          <div class="card fairness-card">
+            <div class="section-head section-head-small">
+              <div>
+                <p class="eyebrow">Fairness</p>
+                <h3>Committed hash</h3>
+              </div>
+            </div>
+            <div class="hash-box" id="hashBox">Generating...</div>
+            <p class="fair-copy">Hash is committed before close and the result is revealed from that seed.</p>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <div class="overlay hidden" id="closedOverlay">
+    <div class="overlay-card">
+      <div class="overlay-spinner"></div>
+      <h2>⛔ Betting Closed</h2>
+      <p>Hold on. Winning number reveal ho raha hai.</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>© 2026 LuckyNum. All rights reserved.</p>
+  </footer>
+</body>
+</html>
