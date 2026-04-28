@@ -14,15 +14,16 @@ create or replace function public.place_round_bet(
   input_amount integer
 )
 returns table (
-  round_no bigint,
-  picked_number smallint,
-  amount integer,
-  balance integer
+  _round_no bigint,
+  _picked_number smallint,
+  _amount integer,
+  _balance integer
 )
 language plpgsql
 security definer
 set search_path = public
 as $$
+#variable_conflict use_column
 declare
   current_user_id uuid := auth.uid();
   round_row public.shared_rounds%rowtype;
@@ -115,10 +116,10 @@ $$;
 
 create or replace function public.get_recent_round_history(limit_count integer default 12)
 returns table (
-  round_no bigint,
-  winning_number smallint,
-  winner_names text,
-  winner_count integer
+  _round_no bigint,
+  _winning_number smallint,
+  _winner_names text,
+  _winner_count integer
 )
 language sql
 security definer
@@ -147,6 +148,7 @@ language plpgsql
 security definer
 set search_path = public, extensions
 as $$
+#variable_conflict use_column
 declare
   round_epoch constant timestamptz := '2026-01-01 00:00:00+00'::timestamptz;
   round_span constant interval := interval '70 second';

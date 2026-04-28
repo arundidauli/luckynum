@@ -515,12 +515,12 @@ function renderHistory() {
 
   dom.historyList.innerHTML = state.history
     .map((entry) => {
-      const winners = entry.winner_count > 0 ? entry.winner_names : "No winners";
+      const winners = entry._winner_count > 0 ? entry._winner_names : "No winners";
       return `
         <div class="history-item">
-          <div class="history-ball">${entry.winning_number}</div>
+          <div class="history-ball">${entry._winning_number}</div>
           <div>
-            <div class="history-title">Round #${entry.round_no}</div>
+            <div class="history-title">Round #${entry._round_no}</div>
             <div class="history-meta">Winners: ${winners}</div>
           </div>
         </div>
@@ -557,14 +557,14 @@ async function placeBet() {
 
     const bet = Array.isArray(data) ? data[0] : data;
     state.myBet = {
-      round_no: bet.round_no,
-      picked_number: bet.picked_number,
-      amount: bet.amount,
+      round_no: bet._round_no,
+      picked_number: bet._picked_number,
+      amount: bet._amount,
     };
-    state.user.balance = bet.balance;
+    state.user.balance = bet._balance;
     renderAll();
     sfx("place");
-    showToast(`Bet placed on ${bet.picked_number} for ${formatCurrency(bet.amount)}`);
+    showToast(`Bet placed on ${bet._picked_number} for ${formatCurrency(bet._amount)}`);
   } catch (error) {
     console.error("Place bet failed", error);
     showToast("Could not place bet.");
