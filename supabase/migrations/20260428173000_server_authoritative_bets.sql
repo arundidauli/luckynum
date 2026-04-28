@@ -56,21 +56,21 @@ begin
     raise exception 'Betting closed for this round';
   end if;
 
-  select balance
+  select p.balance
   into profile_balance
-  from public.profiles
-  where id = current_user_id
+  from public.profiles p
+  where p.id = current_user_id
   for update;
 
   if not found then
     raise exception 'Profile not found';
   end if;
 
-  select amount
+  select rb.amount
   into previous_amount
-  from public.round_bets
-  where round_bets.round_no = input_round_no
-    and round_bets.user_id = current_user_id
+  from public.round_bets rb
+  where rb.round_no = input_round_no
+    and rb.user_id = current_user_id
   for update;
 
   previous_amount := coalesce(previous_amount, 0);
@@ -80,11 +80,11 @@ begin
     raise exception 'Balance too low';
   end if;
 
-  update public.profiles
+  update public.profiles p
   set
     balance = next_balance,
     updated_at = timezone('utc', now())
-  where id = current_user_id;
+  where p.id = current_user_id;
 
   insert into public.round_bets (
     round_no,
