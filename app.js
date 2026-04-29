@@ -28,6 +28,7 @@ const dom = {
   resultBall: document.getElementById("resultBall"),
   resultTitle: document.getElementById("resultTitle"),
   resultCopy: document.getElementById("resultCopy"),
+  resultBox: document.querySelector(".result-box"),
   hashBox: document.getElementById("hashBox"),
   betStatus: document.getElementById("betStatus"),
   numbersGrid: document.getElementById("numbersGrid"),
@@ -162,24 +163,51 @@ function playTone({ freq, endFreq = freq, type = "sine", duration = 0.08, volume
 
 function sfx(type) {
   if (type === "place") {
-    playTone({ freq: 420, endFreq: 680, type: "triangle", duration: 0.08, volume: 0.08 });
+    playTone({ freq: 420, endFreq: 700, type: "triangle", duration: 0.08, volume: 0.08 });
     setTimeout(() => {
-      playTone({ freq: 760, endFreq: 960, duration: 0.05, volume: 0.06 });
+      playTone({ freq: 760, endFreq: 980, duration: 0.05, volume: 0.06 });
     }, 40);
   }
   if (type === "close") {
-    playTone({ freq: 320, endFreq: 160, type: "square", duration: 0.12, volume: 0.05 });
+    [340, 260, 190].forEach((freq, index) => {
+      setTimeout(() => {
+        playTone({ freq, endFreq: freq * 0.75, type: "square", duration: 0.1, volume: 0.05 });
+      }, index * 65);
+    });
+  }
+  if (type === "reveal") {
+    [340, 430, 540, 700].forEach((freq, index) => {
+      setTimeout(() => {
+        playTone({ freq, endFreq: freq * 1.08, type: "triangle", duration: 0.07, volume: 0.06 });
+      }, index * 55);
+    });
   }
   if (type === "win") {
-    [523, 659, 880].forEach((freq, index) => {
+    [523, 659, 784, 1047].forEach((freq, index) => {
       setTimeout(() => {
-        playTone({ freq, endFreq: freq * 1.1, duration: 0.12, volume: 0.1 });
-      }, index * 90);
+        playTone({ freq, endFreq: freq * 1.12, type: "sine", duration: 0.12, volume: 0.11 });
+      }, index * 85);
     });
   }
   if (type === "loss") {
-    playTone({ freq: 240, endFreq: 110, type: "sawtooth", duration: 0.14, volume: 0.07 });
+    [260, 210, 140].forEach((freq, index) => {
+      setTimeout(() => {
+        playTone({ freq, endFreq: freq * 0.6, type: "sawtooth", duration: 0.12, volume: 0.07 });
+      }, index * 70);
+    });
   }
+}
+
+function triggerResultFx(effectClass) {
+  if (!dom.resultBox) {
+    return;
+  }
+  dom.resultBox.classList.remove("fx-reveal", "fx-win", "fx-loss");
+  if (!effectClass) {
+    return;
+  }
+  void dom.resultBox.offsetWidth;
+  dom.resultBox.classList.add(effectClass);
 }
 
 function getPhase(round, nowMs = Date.now()) {
@@ -416,6 +444,8 @@ function renderRound() {
   }
 
   const phase = getPhase(round);
+  dom.resultBox?.classList.remove("phase-betting", "phase-closed", "phase-reveal");
+  dom.resultBox?.classList.add(`phase-${phase}`);
   dom.phaseLabel.textContent =
     phase === "betting" ? "Betting Open" : phase === "closed" ? "Betting Closed" : "Result Live";
   dom.roundLabel.textContent = `Round #${round.round_no}`;
@@ -648,10 +678,15 @@ async function syncSnapshot() {
         sfx("close");
       }
       if (currentPhase === "reveal") {
+        sfx("reveal");
         if (state.myBet?.is_winner) {
           sfx("win");
+          triggerResultFx("fx-win");
         } else if (state.myBet?.settled_at) {
           sfx("loss");
+          triggerResultFx("fx-loss");
+        } else {
+          triggerResultFx("fx-reveal");
         }
       }
     }

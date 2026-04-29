@@ -296,6 +296,7 @@ input {
   border: 1px solid var(--border);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
 .result-ball {
@@ -308,6 +309,57 @@ input {
   color: #fff;
   font-size: 2rem;
   font-weight: 800;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+
+.result-box.phase-betting {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(255, 255, 255, 0.04));
+}
+
+.result-box.phase-betting .result-ball {
+  animation: orbPulse 1.8s ease-in-out infinite;
+}
+
+.result-box.phase-closed {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.04));
+}
+
+.result-box.phase-closed .result-ball {
+  animation: orbPulseFast 0.95s ease-in-out infinite;
+}
+
+.result-box.phase-reveal {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2), 0 18px 35px rgba(239, 68, 68, 0.15);
+}
+
+.result-box.phase-reveal .result-ball {
+  filter: saturate(1.25);
+}
+
+.result-box.fx-reveal .result-ball {
+  animation: revealPop 0.8s ease;
+}
+
+.result-box.fx-win {
+  animation: winFlash 1.2s ease;
+}
+
+.result-box.fx-win .result-ball {
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 14px 30px rgba(34, 197, 94, 0.4);
+  animation: revealPop 0.8s ease;
+}
+
+.result-box.fx-loss {
+  animation: lossShake 0.42s ease;
+}
+
+.result-box.fx-loss .result-ball {
+  background: linear-gradient(180deg, #f97316, #c2410c);
 }
 
 .result-box h3 {
@@ -440,6 +492,68 @@ input {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+@keyframes orbPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes orbPulseFast {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes revealPop {
+  0% {
+    transform: scale(0.82) rotate(-8deg);
+  }
+  65% {
+    transform: scale(1.14) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes winFlash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+  35% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.2), 0 20px 40px rgba(34, 197, 94, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes lossShake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 @media (max-width: 900px) {
