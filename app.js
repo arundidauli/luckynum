@@ -324,6 +324,7 @@ async function signIn() {
 
     const { data: sessionData } = await supabaseClient.auth.getSession();
     if (sessionData?.session) {
+      showGameScreen();
       await hydrateAuthenticatedApp(sessionData.session);
     }
     dom.passwordInput.value = "";
@@ -362,12 +363,20 @@ async function signUp() {
     }
 
     if (data.session) {
+      showGameScreen();
       await hydrateAuthenticatedApp(data.session);
       showToast("Account created.");
     } else {
-      const message = "Account created. Confirm your email, then sign in.";
-      updateAuthMessage(message);
-      showToast(message);
+      const signInAttempt = await supabaseClient.auth.signInWithPassword(creds);
+      if (!signInAttempt.error && signInAttempt.data?.session) {
+        showGameScreen();
+        await hydrateAuthenticatedApp(signInAttempt.data.session);
+        showToast("Account created.");
+      } else {
+        const message = "Account created. Confirm your email, then sign in.";
+        updateAuthMessage(message);
+        showToast(message);
+      }
     }
     dom.passwordInput.value = "";
   } catch (error) {
@@ -551,7 +560,11 @@ async function placeBet() {
     });
 
     if (error) {
-      showToast(error.message);
+      if (error.message?.toLowerCase().includes("balance") && error.message?.toLowerCase().includes("ambiguous")) {
+        showToast("Server bet function needs update. Apply latest SQL migration.");
+      } else {
+        showToast(error.message);
+      }
       return;
     }
 
@@ -775,6 +788,7 @@ async function bootstrap() {
     console.error("Session restore failed", error);
   }
   if (data?.session) {
+    showGameScreen();
     await hydrateAuthenticatedApp(data.session);
   }
 
