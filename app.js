@@ -10,6 +10,7 @@ const SOUND_STORAGE_KEY = "luckynum:sound";
 const dom = {
   entryScreen: document.getElementById("entryScreen"),
   gameScreen: document.getElementById("gameScreen"),
+  nameField: document.getElementById("nameField"),
   usernameInput: document.getElementById("usernameInput"),
   emailInput: document.getElementById("emailInput"),
   passwordInput: document.getElementById("passwordInput"),
@@ -89,6 +90,8 @@ let toastTimer;
 let authSubscription;
 let syncInFlight = false;
 let lastPhaseKey = "";
+let isPlacingBet = false;
+let authMode = "signin";
 
 function readSoundPreference() {
   try {
@@ -252,6 +255,12 @@ function updateDefaultAuthMessage() {
   updateAuthMessage("Create an account or sign in to join the live round.");
 }
 
+function setAuthMode(mode) {
+  authMode = mode === "register" ? "register" : "signin";
+  const isRegister = authMode === "register";
+  dom.nameField.style.display = isRegister ? "block" : "none";
+}
+
 function showEntryScreen() {
   dom.entryScreen.classList.add("screen-active");
   dom.gameScreen.classList.remove("screen-active");
@@ -265,7 +274,7 @@ function showGameScreen() {
 function setAuthButtonsDisabled(disabled) {
   dom.signInButton.disabled = disabled;
   dom.signUpButton.disabled = disabled;
-  dom.usernameInput.disabled = disabled;
+  dom.usernameInput.disabled = disabled || authMode !== "register";
   dom.emailInput.disabled = disabled;
   dom.passwordInput.disabled = disabled;
 }
@@ -526,24 +535,31 @@ function renderBetControls() {
     dom.potentialWinText.textContent = formatCurrency(Math.round(state.myBet.amount * WIN_MULT));
   }
 
+  let placeBetButton = document.getElementById("placeBetButton");
+  if (!placeBetButton) {
+    dom.placeButtonWrap.innerHTML = "";
+    placeBetButton = document.createElement("button");
+    placeBetButton.id = "placeBetButton";
+    placeBetButton.type = "button";
+    placeBetButton.className = "btn btn-primary";
+    placeBetButton.addEventListener("click", () => {
+      void placeBet();
+    });
+    dom.placeButtonWrap.appendChild(placeBetButton);
+  }
+
   const isBettingOpen = getPhase(state.round) === "betting";
-  if (!isBettingOpen) {
-    dom.placeButtonWrap.innerHTML =
-      '<button class="btn btn-primary" disabled type="button">Betting Closed</button>';
-    return;
+  const hasSelection = Boolean(state.selectedNumber && state.selectedAmount);
+  placeBetButton.disabled = isPlacingBet || !isBettingOpen || !hasSelection;
+  if (isPlacingBet) {
+    placeBetButton.textContent = "Placing...";
+  } else if (!isBettingOpen) {
+    placeBetButton.textContent = "Betting Closed";
+  } else if (!hasSelection) {
+    placeBetButton.textContent = "Choose number and amount";
+  } else {
+    placeBetButton.textContent = "Place Bet";
   }
-
-  if (!state.selectedNumber || !state.selectedAmount) {
-    dom.placeButtonWrap.innerHTML =
-      '<button class="btn btn-primary" disabled type="button">Choose number and amount</button>';
-    return;
-  }
-
-  dom.placeButtonWrap.innerHTML =
-    '<button class="btn btn-primary" id="placeBetButton" type="button">Place Bet</button>';
-  document.getElementById("placeBetButton").addEventListener("click", () => {
-    void placeBet();
-  });
 }
 
 function renderHistory() {
@@ -582,10 +598,12 @@ function renderAll() {
 }
 
 async function placeBet() {
-  if (!state.round || !state.selectedNumber || !state.selectedAmount) {
+  if (!state.round || !state.selectedNumber || !state.selectedAmount || isPlacingBet) {
     return;
   }
 
+  isPlacingBet = true;
+  renderBetControls();
   try {
     const { data, error } = await supabaseClient.rpc("place_round_bet", {
       input_round_no: state.round.round_no,
@@ -615,6 +633,9 @@ async function placeBet() {
   } catch (error) {
     console.error("Place bet failed", error);
     showToast("Could not place bet.");
+  } finally {
+    isPlacingBet = false;
+    renderBetControls();
   }
 }
 
@@ -737,6 +758,7 @@ function resetSignedOutState() {
   state.myBet = null;
   state.round = null;
   state.history = [];
+  setAuthMode("signin");
   renderAll();
   showEntryScreen();
   updateDefaultAuthMessage();
@@ -774,9 +796,19 @@ async function hydrateAuthenticatedApp(session) {
 
 function bindEvents() {
   dom.signInButton.addEventListener("click", () => {
+    if (authMode !== "signin") {
+      setAuthMode("signin");
+      dom.emailInput.focus();
+      return;
+    }
     void signIn();
   });
   dom.signUpButton.addEventListener("click", () => {
+    if (authMode !== "register") {
+      setAuthMode("register");
+      dom.usernameInput.focus();
+      return;
+    }
     void signUp();
   });
   dom.signOutButton.addEventListener("click", () => {
@@ -784,7 +816,11 @@ function bindEvents() {
   });
   dom.passwordInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
-      void signIn();
+      if (authMode === "register") {
+        void signUp();
+      } else {
+        void signIn();
+      }
     }
   });
   dom.soundButton.addEventListener("click", () => {
@@ -811,6 +847,7 @@ function bindEvents() {
 
 async function bootstrap() {
   bindEvents();
+  setAuthMode("signin");
   renderAll();
   resetSignedOutState();
 
