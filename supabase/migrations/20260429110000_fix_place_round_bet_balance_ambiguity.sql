@@ -1,3 +1,5 @@
+drop function if exists public.place_round_bet(bigint, smallint, integer);
+
 create or replace function public.place_round_bet(
   input_round_no bigint,
   input_picked_number smallint,

@@ -524,12 +524,16 @@ function renderHistory() {
 
   dom.historyList.innerHTML = state.history
     .map((entry) => {
-      const winners = entry._winner_count > 0 ? entry._winner_names : "No winners";
+      const roundNo = entry._round_no ?? entry.round_no ?? "?";
+      const winningNumber = entry._winning_number ?? entry.winning_number ?? "?";
+      const winnerCount = entry._winner_count ?? entry.winner_count ?? 0;
+      const winnerNames = entry._winner_names ?? entry.winner_names ?? "No winners";
+      const winners = winnerCount > 0 ? winnerNames : "No winners";
       return `
         <div class="history-item">
-          <div class="history-ball">${entry._winning_number}</div>
+          <div class="history-ball">${winningNumber}</div>
           <div>
-            <div class="history-title">Round #${entry._round_no}</div>
+            <div class="history-title">Round #${roundNo}</div>
             <div class="history-meta">Winners: ${winners}</div>
           </div>
         </div>
