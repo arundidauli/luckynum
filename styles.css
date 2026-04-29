@@ -150,8 +150,12 @@ input {
 }
 
 .auth-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   margin-top: 20px;
+}
+
+.auth-actions .btn {
+  width: 100%;
 }
 
 .auth-switch-copy {

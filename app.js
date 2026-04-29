@@ -95,6 +95,7 @@ let lastPhaseKey = "";
 let isPlacingBet = false;
 let authMode = "signin";
 let lastCleanupAt = 0;
+let lastOutcomeRoundNo = 0;
 
 function readSoundPreference() {
   try {
@@ -179,6 +180,13 @@ function sfx(type) {
       setTimeout(() => {
         playTone({ freq, endFreq: freq * 0.75, type: "square", duration: 0.1, volume: 0.05 });
       }, index * 65);
+    });
+  }
+  if (type === "wait") {
+    [620, 620].forEach((freq, index) => {
+      setTimeout(() => {
+        playTone({ freq, endFreq: freq * 0.98, type: "triangle", duration: 0.05, volume: 0.04 });
+      }, index * 220);
     });
   }
   if (type === "reveal") {
@@ -483,7 +491,7 @@ function renderRound() {
     dom.timerFill.style.width = "0%";
     dom.resultBall.textContent = "?";
     dom.resultTitle.textContent = "Betting closed";
-    dom.resultCopy.textContent = "Shared result is about to reveal.";
+    dom.resultCopy.textContent = "Waiting for result...";
     return;
   }
 
@@ -492,7 +500,15 @@ function renderRound() {
   dom.timerFill.style.width = `${Math.max(0, (left / (ROUND_MS - BET_SEC)) * 100)}%`;
   dom.resultBall.textContent = String(round.winning_number ?? "?");
   dom.resultTitle.textContent = `Winning Number: ${round.winning_number ?? "?"}`;
-  dom.resultCopy.textContent = "Same result for every player in this round.";
+  if (state.myBet?.settled_at) {
+    if (state.myBet.is_winner) {
+      dom.resultCopy.textContent = `You won ${formatCurrency(state.myBet.payout)}. Great hit!`;
+    } else {
+      dom.resultCopy.textContent = "Better luck next time.";
+    }
+  } else {
+    dom.resultCopy.textContent = "Same result for every player in this round.";
+  }
 }
 
 function renderNumbers() {
@@ -720,15 +736,24 @@ async function syncSnapshot() {
     if (previousPhaseKey && previousPhaseKey !== lastPhaseKey) {
       if (currentPhase === "closed") {
         sfx("close");
+        sfx("wait");
       }
       if (currentPhase === "reveal") {
         sfx("reveal");
         if (state.myBet?.is_winner) {
           sfx("win");
           triggerResultFx("fx-win");
+          if (lastOutcomeRoundNo !== state.round.round_no) {
+            showToast(`You won ${formatCurrency(state.myBet.payout)}!`);
+            lastOutcomeRoundNo = state.round.round_no;
+          }
         } else if (state.myBet?.settled_at) {
           sfx("loss");
           triggerResultFx("fx-loss");
+          if (lastOutcomeRoundNo !== state.round.round_no) {
+            showToast("Better luck next time.");
+            lastOutcomeRoundNo = state.round.round_no;
+          }
         } else {
           triggerResultFx("fx-reveal");
         }
