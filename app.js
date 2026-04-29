@@ -16,6 +16,8 @@ const dom = {
   passwordInput: document.getElementById("passwordInput"),
   signInButton: document.getElementById("signInButton"),
   signUpButton: document.getElementById("signUpButton"),
+  authSwitchCopy: document.getElementById("authSwitchCopy"),
+  authSwitchButton: document.getElementById("authSwitchButton"),
   signOutButton: document.getElementById("signOutButton"),
   authMessage: document.getElementById("authMessage"),
   soundButton: document.getElementById("soundButton"),
@@ -92,6 +94,7 @@ let syncInFlight = false;
 let lastPhaseKey = "";
 let isPlacingBet = false;
 let authMode = "signin";
+let lastCleanupAt = 0;
 
 function readSoundPreference() {
   try {
@@ -259,6 +262,10 @@ function setAuthMode(mode) {
   authMode = mode === "register" ? "register" : "signin";
   const isRegister = authMode === "register";
   dom.nameField.style.display = isRegister ? "block" : "none";
+  dom.signInButton.style.display = isRegister ? "none" : "block";
+  dom.signUpButton.style.display = isRegister ? "block" : "none";
+  dom.authSwitchCopy.textContent = isRegister ? "Already have an account?" : "Don't have an account?";
+  dom.authSwitchButton.textContent = isRegister ? "Sign In" : "Create Account";
 }
 
 function showEntryScreen() {
@@ -639,6 +646,21 @@ async function placeBet() {
   }
 }
 
+async function cleanupOldRoundsIfDue() {
+  if (!supabaseClient) {
+    return;
+  }
+  const nowMs = Date.now();
+  if (nowMs - lastCleanupAt < 120000) {
+    return;
+  }
+  lastCleanupAt = nowMs;
+  const { error } = await supabaseClient.rpc("cleanup_previous_day_rounds");
+  if (error) {
+    console.error("Cleanup rounds failed", error);
+  }
+}
+
 async function syncSnapshot() {
   if (!authUser?.id || syncInFlight) {
     return;
@@ -646,6 +668,7 @@ async function syncSnapshot() {
 
   syncInFlight = true;
   try {
+    await cleanupOldRoundsIfDue();
     const { data: currentRoundNo, error: roundNoError } = await supabaseClient.rpc("sync_shared_rounds");
     if (roundNoError) {
       console.error("Round sync failed", roundNoError);
@@ -796,20 +819,18 @@ async function hydrateAuthenticatedApp(session) {
 
 function bindEvents() {
   dom.signInButton.addEventListener("click", () => {
-    if (authMode !== "signin") {
-      setAuthMode("signin");
-      dom.emailInput.focus();
-      return;
-    }
     void signIn();
   });
   dom.signUpButton.addEventListener("click", () => {
-    if (authMode !== "register") {
-      setAuthMode("register");
-      dom.usernameInput.focus();
-      return;
-    }
     void signUp();
+  });
+  dom.authSwitchButton.addEventListener("click", () => {
+    setAuthMode(authMode === "register" ? "signin" : "register");
+    if (authMode === "register") {
+      dom.usernameInput.focus();
+    } else {
+      dom.emailInput.focus();
+    }
   });
   dom.signOutButton.addEventListener("click", () => {
     void signOut();
